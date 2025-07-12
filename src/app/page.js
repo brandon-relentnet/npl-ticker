@@ -58,21 +58,15 @@ const TeamRow = ({ team, isServing }) => (
 export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center flex-col">
-      <h1 className="text-xl italic font-black text-stone-900">
-        Ticker Display
-      </h1>
       {matchTickerData.map((match, index) => (
-        <div
-          key={index}
-          className="border-2 border-dashed border-stone-800 p-18 rounded flex flex-col"
-        >
+        <div key={index} className=" p-18 rounded flex flex-col">
           {/* Match Title Bar */}
           <div className="bg-stone-900 text-stone-50 font-black h-8 w-130 rounded-t-lg flex items-center justify-start pl-2">
             {match.matchTitle}
           </div>
 
           {/* Main Ticker Bar */}
-          <div className="relative h-40 w-180 shadow-lg rounded-r-lg flex items-center justify-between">
+          <div className="relative h-40 w-180 rounded-r-lg flex items-center justify-between">
             <div className="bg-stone-100 h-full aspect-square flex items-center justify-center">
               <Image
                 className="w-full h-auto p-2"
