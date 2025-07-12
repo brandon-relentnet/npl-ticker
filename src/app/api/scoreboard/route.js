@@ -50,6 +50,8 @@ export async function GET(request) {
 
     const data = await response.json();
 
+    console.log("Games data:", data.result.Games);
+
     // Process the data into the expected format
     if (data.result && data.result.Data) {
       const match = data.result.Data;
@@ -70,25 +72,36 @@ export async function GET(request) {
         ? [t2p1LastName.toUpperCase(), t2p2LastName.toUpperCase()]
         : [t2p1LastName.toUpperCase()];
 
-      // Count completed games won by each team
-      const gamesWon1 = games.filter(
-        (g) => g.Status === "Completed" && g.T1_Score > g.T2_Score
-      ).length;
-      const gamesWon2 = games.filter(
-        (g) => g.Status === "Completed" && g.T2_Score > g.T1_Score
-      ).length;
+      // Extract individual game scores for each team
+      const team1GameScores = [];
+      const team2GameScores = [];
 
-      // Get current game (first non-completed or last game)
-      const currentGame =
-        games.find((g) => g.Status !== "Completed") || games[games.length - 1];
-      const currentGameScore1 = currentGame ? currentGame.T1_Score : 0;
-      const currentGameScore2 = currentGame ? currentGame.T2_Score : 0;
+      // Map each game's scores
+      games.forEach((game) => {
+        team1GameScores.push(game.T1_Score || 0);
+        team2GameScores.push(game.T2_Score || 0);
+      });
 
-      // Determine serving number for each team
+      // Ensure we have at least 3 scores (pad with 0s if needed)
+      while (team1GameScores.length < 3) {
+        team1GameScores.push(0);
+      }
+      while (team2GameScores.length < 3) {
+        team2GameScores.push(0);
+      }
+
+      // Get current game - first non-completed game
+      const currentGame = games.find((g) => g.Status !== "Completed");
+
+      // Determine serving number for display (separate from scores)
       const team1ServingNumber =
-        match.CurrentServingTeam === 1 ? match.CurrentServingNumber : 0;
+        currentGame && match.CurrentServingTeam === 1
+          ? match.CurrentServingNumber
+          : 0;
       const team2ServingNumber =
-        match.CurrentServingTeam === 2 ? match.CurrentServingNumber : 0;
+        currentGame && match.CurrentServingTeam === 2
+          ? match.CurrentServingNumber
+          : 0;
 
       // Create team names using player initials
       const team1Name = t1p2LastName
@@ -102,8 +115,9 @@ export async function GET(request) {
       // Build match title from available data
       const matchTitle = match.TournamentTitle || match.EventTitle || "";
 
-      // Generate court name - you might need to adjust this based on your actual data
-      const court = `Court ${match.CurrentGameNum || 1}`;
+      // Generate court name - use CourtName if available, otherwise use a default
+      const court =
+        match.CourtName || match.Court || `Court ${match.CourtNum || ""}`;
 
       // Transform the data into the expected format
       const processedData = {
@@ -112,18 +126,27 @@ export async function GET(request) {
         homeTeam: {
           name: team1Name,
           players: team1Players,
-          score: [gamesWon1, currentGameScore1, team1ServingNumber],
-          serving: match.CurrentServingTeam === 1,
+          score: team1GameScores, // [game1Score, game2Score, game3Score]
+          serving: currentGame ? match.CurrentServingTeam === 1 : false,
+          servingNumber: team1ServingNumber, // Separate field for serving number if needed
         },
         awayTeam: {
           name: team2Name,
           players: team2Players,
-          score: [gamesWon2, currentGameScore2, team2ServingNumber],
-          serving: match.CurrentServingTeam === 2,
+          score: team2GameScores, // [game1Score, game2Score, game3Score]
+          serving: currentGame ? match.CurrentServingTeam === 2 : false,
+          servingNumber: team2ServingNumber, // Separate field for serving number if needed
         },
       };
 
-      console.log(data);
+      // Add debug info
+      console.log("Processed data:", {
+        team1GameScores,
+        team2GameScores,
+        currentGame: currentGame ? currentGame.Num : "None",
+        team1ServingNumber,
+        team2ServingNumber,
+      });
 
       // Return the processed data
       return NextResponse.json({
