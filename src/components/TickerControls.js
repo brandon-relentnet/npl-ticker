@@ -1,16 +1,58 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RefreshCw } from "lucide-react";
 
 export default function ScoreboardControls() {
   const [isVisible, setIsVisible] = useState(true);
-  const [apiToken, setApiToken] = useState("");
-  const [environment, setEnvironment] = useState("production");
-  const [tvId, setTvId] = useState("");
+  const [apiToken, setApiToken] = useState("6ae80b8a-303a-11f0-9dd5-0e3258621993");
+  const [environment, setEnvironment] = useState("https://api.pickleballdev.net");
+  const [tvId, setTvId] = useState("A");
   const [tournamentCode, setTournamentCode] = useState("");
-  const [teamLeagueCode, setTeamLeagueCode] = useState("");
-  const [refreshRate, setRefreshRate] = useState("30");
+  const [teamLeagueCode, setTeamLeagueCode] = useState("TLd176f2");
+  const [refreshRate, setRefreshRate] = useState("5");
+
+  // Load saved config on mount
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('scoreboardConfig');
+    if (savedConfig) {
+      const config = JSON.parse(savedConfig);
+      setApiToken(config.apiToken || "6ae80b8a-303a-11f0-9dd5-0e3258621993");
+      setEnvironment(config.environment || "https://api.pickleballdev.net");
+      setTvId(config.tvId || "A");
+      setTournamentCode(config.tournamentCode || "");
+      setTeamLeagueCode(config.teamLeagueCode || "");
+      setRefreshRate(config.refreshRate || "5");
+    }
+  }, []);
+
+  const handleStartScoreboard = () => {
+    if (!tvId) {
+      alert('Please enter TV ID');
+      return;
+    }
+
+    if (!tournamentCode && !teamLeagueCode) {
+      alert('Please enter either Tournament Code or Team League Code');
+      return;
+    }
+
+    const config = {
+      apiToken,
+      environment,
+      tvId,
+      tournamentCode,
+      teamLeagueCode,
+      refreshRate: parseInt(refreshRate)
+    };
+
+    // Save to localStorage and trigger storage event
+    localStorage.setItem('scoreboardConfig', JSON.stringify(config));
+    window.dispatchEvent(new Event('storage'));
+
+    // Hide config panel
+    setIsVisible(false);
+  };
 
   if (!isVisible) {
     return (
@@ -50,9 +92,8 @@ export default function ScoreboardControls() {
             onChange={(e) => setEnvironment(e.target.value)}
             className="w-full px-3 py-2 bg-stone-800 border border-stone-700 rounded-lg focus:outline-none focus:border-emerald-500 appearance-none cursor-pointer"
           >
-            <option value="production">Production</option>
-            <option value="staging">Staging</option>
-            <option value="development">Development</option>
+            <option value="https://api.pickleball.com">Production</option>
+            <option value="https://api.pickleballdev.net">Development</option>
           </select>
         </div>
 
@@ -117,7 +158,7 @@ export default function ScoreboardControls() {
       {/* Buttons */}
       <div className="mt-6 space-y-3">
         <button
-          onClick={() => console.log("Start Scoreboard clicked")}
+          onClick={handleStartScoreboard}
           className="w-full bg-emerald-500 hover:bg-emerald-600 text-stone-900 font-bold py-3 rounded-lg transition-colors"
         >
           Start Scoreboard
